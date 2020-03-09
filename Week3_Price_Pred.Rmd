@@ -102,11 +102,11 @@ Stepwise Slection of Variables
 
 ```{r}
 ##Modeling
-null.model <- lm(saleprice~1, data = house_train)
-model2<-lm(saleprice~., data = house_train)
+null.model <- lm(saleprice~1, data = house)
+model2<-lm(saleprice~., data = house)
 
 #stepwise selection model
-stepselect<-step(model2, scope = list(upper=model2), data = house_train, direction = "both", trace = 0)
+stepselect<-step(model2, scope = list(upper=model2), data = house, direction = "both", trace = 0)
 summary(stepselect)
 
 plot(stepselect, 1)
@@ -128,9 +128,9 @@ Here we are going to identify the data points that are having a very huge influe
 ```{r}
 
 HighLeverage <- cooks.distance(stepselect) > (0.010/nrow(house))
-LargeResiduals <- rstudent(stepselect) > 7686
+LargeResiduals <- rstudent(stepselect) > 14368
 house <- house[!HighLeverage & !LargeResiduals,]
-final_model<-lm(saleprice ~., data = house_train)
+final_model<-lm(saleprice ~., data = house)
 
 summary(final_model)
 
@@ -149,9 +149,7 @@ plot(final_model, 6)
 
 
 ```{r}
-final_model <- lm(formula = saleprice ~ financing + buyersellerrelated + personalproperty + 
-    stories + rooms + walls + roof + bathfixtur + sqft + garage + 
-    garagecapa + poolarea + lon + lat + zip, data = house_train)
+final_model <- lm(formula = saleprice ~., data = house_train)
 
 summary(final_model)
 
