@@ -51,10 +51,6 @@ str(house_train)
 str(house_test)
 ```
 
-
-
-
-
 ```{r}
 #summary(house)
 model1<-lm(saleprice~., data = house_train)
