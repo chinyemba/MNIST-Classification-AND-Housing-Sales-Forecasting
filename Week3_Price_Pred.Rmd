@@ -1,0 +1,177 @@
+---
+title: "Week 3 Dream House Price Prediction"
+author: "Chinyemba Victor"
+date: "08/03/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r }
+#Libraries 
+library(MASS)
+library(lmtest)
+library(car)
+library(gvlma)
+library(ggplot2)
+library(caret)
+library(stringr)
+library(e1071)
+library(dplyr)
+library(readr)
+
+```
+
+read the data 
+
+```{r message=FALSE, warning=FALSE}
+setwd("~/Desktop/Enhance IT/Week_3")
+house<- read_csv('house_clean3.csv')
+```
+
+Remove first column X1:
+```{r message=FALSE, warning=FALSE}
+
+house$X1=NULL
+#house$age_house=NULL
+#house$lat=NULL
+```
+
+Split data into training and test sets.
+
+
+```{r}
+library(caTools)
+set.seed(123)
+sample <- sample.split(house,SplitRatio = 0.80)
+house_train <- subset(house,sample ==TRUE) 
+house_test <- subset(house, sample==FALSE)
+
+str(house_train)
+str(house_test)
+```
+
+
+
+
+
+```{r}
+#summary(house)
+model1<-lm(saleprice~., data = house_train)
+summary(model1)
+```
+
+It has been determined that solar and personal property variables do not significantly contribute to the target variable sale price. 
+
+```{r}
+par(mfrow=c(2,2))
+plot(model1)
+
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+res<-model1$residuals
+plot(res, main = "Residuals plot")  
+abline(h=0, col="red") # regression line
+```
+
+
+Test for Normality of Residuals
+
+```{r}
+hist(residuals(model1))
+boxplot(residuals(model1), horizontal = T)
+densityplot(model1$residuals)
+```
+
+There seems to be a problem of multicolinearity in the dataset as most of the variables are not to close to 1.
+```{r}
+
+res1=sample(res, 2500, replace=FALSE)
+shapiro.test(res1)
+```
+
+Test for homoscedasticity
+```{r}
+ncvTest(model1)
+```
+
+Stepwise Slection of Variables 
+
+```{r}
+##Modeling
+null.model <- lm(saleprice~1, data = house_train)
+model2<-lm(saleprice~., data = house_train)
+
+#stepwise selection model
+stepselect<-step(model2, scope = list(upper=model2), data = house_train, direction = "both", trace = 0)
+summary(stepselect)
+
+plot(stepselect, 1)
+plot(stepselect, 2)
+plot(stepselect, 3)
+plot(stepselect, 4)
+plot(stepselect, 5)
+plot(stepselect, 6)
+
+```
+Plot of Residuals:
+```{r}
+par(mfrow=c(1,1))
+res<-stepselect$residuals
+plot(res, main = "Residuals plot")  
+abline(h=0, col="red") # regression line
+```
+Here we are going to identify the data points that are having a very huge influence on the model (outlier points). We shall use the Cook's distance to identify them.
+```{r}
+
+HighLeverage <- cooks.distance(stepselect) > (0.010/nrow(house))
+LargeResiduals <- rstudent(stepselect) > 7686
+house <- house[!HighLeverage & !LargeResiduals,]
+final_model<-lm(saleprice ~., data = house_train)
+
+summary(final_model)
+
+```
+
+```{r}
+plot(final_model, 1)
+plot(final_model, 2)
+plot(final_model, 3)
+plot(final_model, 4)
+plot(final_model, 5)
+plot(final_model, 6)
+
+```
+
+
+
+```{r}
+final_model <- lm(formula = saleprice ~ financing + buyersellerrelated + personalproperty + 
+    stories + rooms + walls + roof + bathfixtur + sqft + garage + 
+    garagecapa + poolarea + lon + lat + zip, data = house_train)
+
+summary(final_model)
+
+pred<-ifelse(predict(final_model,type='response')>0.5,1,0)
+pred
+
+```
+
+
+```{r}
+
+Val_model <- lm(formula = saleprice ~ financing + buyersellerrelated + personalproperty + 
+    stories + rooms + walls + roof + bathfixtur + sqft + garage + 
+    garagecapa + poolarea + lon + lat + zip, data = house_test)
+
+summary(Val_model)
+```
+
+
+
+
+
+
